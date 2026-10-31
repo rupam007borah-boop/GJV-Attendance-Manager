@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="as">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GJV Attendance Manager</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f2f5fa;color:#222}
+header{background:#174b83;color:white;padding:22px;text-align:center}
+main{max-width:600px;margin:20px auto;padding:15px}
+.card{background:white;padding:20px;margin:15px 0;border-radius:12px;box-shadow:0 2px 8px #ddd}
+input,select,button{width:100%;padding:12px;margin:8px 0;box-sizing:border-box;border:1px solid #ccc;border-radius:7px;font-size:16px}
+button{background:#174b83;color:white;border:0;font-weight:bold}
+button:active{opacity:.8}
+#message{color:green}
+</style>
+</head>
+<body>
+<header>
+<h2>GJV Attendance Manager</h2>
+<p>GyanDeep Jatiya Vidyalaya</p>
+</header>
+<main>
+<div class="card">
+<h3>Attendance Entry</h3>
+<label>Teacher Name</label>
+<select id="teacher">
+<option value="">Select Teacher</option>
+</select>
+<label>Date</label>
+<input type="date" id="date">
+<label>Attendance Status</label>
+<select id="status">
+<option>Present</option>
+<option>Absent</option>
+<option>Leave</option>
+</select>
+<button onclick="saveAttendance()">Save Attendance</button>
+<p id="message"></p>
+</div>
+<div class="card">
+<h3>Attendance Records</h3>
+<div id="records">No records yet.</div>
+</div>
+</main>
+<script>
+const teacher=document.getElementById("teacher");
+for(let i=1;i<=20;i++){
+let option=document.createElement("option");
+option.value="Teacher "+i;
+option.textContent="Teacher "+i;
+teacher.appendChild(option);
+}
+document.getElementById("date").valueAsDate=new Date();
+
+function saveAttendance(){
+let name=teacher.value;
+let date=document.getElementById("date").value;
+let status=document.getElementById("status").value;
+if(!name||!date){alert("Please select teacher and date");return;}
+let data=JSON.parse(localStorage.getItem("gjvRecords")||"[]");
+data.push({name,date,status});
+localStorage.setItem("gjvRecords",JSON.stringify(data));
+document.getElementById("message").textContent="Attendance saved!";
+showRecords();
+}
+function showRecords(){
+let data=JSON.parse(localStorage.getItem("gjvRecords")||"[]");
+document.getElementById("records").innerHTML=data.length?
+data.map(x=>`<p>${x.date} — ${x.name}: <b>${x.status}</b></p>`).join(""):
+"No records yet.";
+}
+showRecords();
+</script>
+</body>
+</html>
