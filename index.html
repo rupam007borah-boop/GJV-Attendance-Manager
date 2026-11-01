@@ -1,171 +1,21 @@
-
 <!DOCTYPE html>
-<html lang="as">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#174b83">
-<title>GJV Attendance Manager</title>
+<html lang="as"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GJV Attendance Manager</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f2f5fa;color:#222;font-family:Arial,sans-serif}
-header{background:#174b83;color:white;padding:22px;text-align:center}
-main{max-width:600px;margin:20px auto;padding:15px}
-.card{background:white;padding:20px;margin:15px 0;border-radius:12px;box-shadow:0 2px 8px #ddd}
-input,button{width:100%;padding:13px;margin:8px 0;border:1px solid #ccc;border-radius:7px;font-size:16px}
-button{background:#174b83;color:white;border:0;font-weight:bold}
-label{font-weight:bold}
-#message{white-space:pre-wrap;font-size:14px}
-.muted{color:#666;font-size:13px}
-.hidden{display:none}
-</style>
-</head>
-<body>
-
-<header>
-<h2>GJV Attendance Manager</h2>
-<p>GyanDeep Jatiya Vidyalaya</p>
-</header>
-
-<main>
-<div class="card" id="loginCard">
-<h3>Login / লগ ইন</h3>
-
-<label>Email</label>
-<input id="email" type="email" placeholder="Enter email">
-
-<label>Password</label>
-<input id="password" type="password" placeholder="Enter password">
-
-<button id="loginBtn">Login</button>
-<p class="muted">Admin আৰু Teacher-ৰ বাবে</p>
-</div>
-
-<div class="card hidden" id="dashboard">
-<h3 id="welcome">Welcome</h3>
-<p id="role"></p>
-<p id="uid" class="muted"></p>
-<button id="logoutBtn">Logout</button>
-</div>
-
-<p id="message"></p>
-</main>
-
+*{box-sizing:border-box}body{margin:0;background:#f2f5fa;color:#222;font-family:Arial,sans-serif}header{background:#174b83;color:white;padding:18px;text-align:center}main{max-width:760px;margin:18px auto;padding:12px}.card{background:white;padding:18px;margin:14px 0;border-radius:12px;box-shadow:0 2px 8px #ddd}input,select,button{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:7px;font-size:16px}button{background:#174b83;color:white;border:0;font-weight:bold}.hidden{display:none}.muted{color:#666;font-size:13px}.teacher{border:1px solid #e1e5eb;border-radius:9px;padding:10px;margin:10px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}#message{white-space:pre-wrap}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style></head><body><header><h2>GJV Attendance Manager</h2><p>GyanDeep Jatiya Vidyalaya</p></header><main>
+<section class="card" id="loginCard"><h3>Login / লগ ইন</h3><label>Email</label><input id="email" type="email"><label>Password</label><input id="password" type="password"><button id="loginBtn">Login</button></section>
+<section class="card hidden" id="dashboard"><div class="grid"><h3 id="welcome">Admin Dashboard</h3><button id="logoutBtn">Logout</button></div><p id="role" class="muted"></p><div id="adminArea" class="hidden"><h3>Daily Attendance / দৈনিক উপস্থিতি</h3><label>Date / তাৰিখ</label><input id="attendanceDate" type="date"><p class="muted">Teacher-ৰ নাম সম্পাদনা কৰি Present, Absent বা Leave বাছনি কৰক।</p><div id="teacherList"></div><button id="saveBtn">Save Attendance / সংৰক্ষণ কৰক</button></div><div id="teacherArea" class="hidden">Teacher Dashboard পৰৱৰ্তী Step-ত সংযোগ কৰা হ’ব।</div></section><p id="message"></p></main>
 <script type="module">
-import { initializeApp } from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
- getAuth,
- signInWithEmailAndPassword,
- onAuthStateChanged,
- signOut
-} from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
- getFirestore,
- doc,
- getDoc
-} from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
- apiKey: "AIzaSyC59avCn7uHDCXjpEK9p37XmSojixT27Ic",
- authDomain: "gjv-attendance-manager.firebaseapp.com",
- projectId: "gjv-attendance-manager",
- storageBucket: "gjv-attendance-manager.firebasestorage.app",
- messagingSenderId: "994581115572",
- appId: "1:994581115572:web:a0db5e510dbf06634fdde1",
- measurementId: "G-L5WBVVLGFP"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const $ = id => document.getElementById(id);
-
-function message(text) {
- $("message").textContent = text;
-}
-
-$("loginBtn").onclick = async () => {
- const email = $("email").value.trim();
- const password = $("password").value;
-
- if (!email || !password) {
-  message("Email আৰু Password দিয়ক।");
-  return;
- }
-
- $("loginBtn").disabled = true;
- message("Login কৰি থকা হৈছে...");
-
- try {
-  await signInWithEmailAndPassword(auth,email,password);
- } catch(error) {
-  message("Login হোৱা নাই: " + error.message);
- } finally {
-  $("loginBtn").disabled = false;
- }
-};
-
-$("logoutBtn").onclick = async () => {
- await signOut(auth);
- message("Logout হৈছে।");
-};
-
-onAuthStateChanged(auth, async user => {
- if (!user) {
-  $("loginCard").classList.remove("hidden");
-  $("dashboard").classList.add("hidden");
-  return;
- }
-
- message("Account যাচাই কৰা হৈছে...");
-
- try {
-  const profileRef = doc(db,"users",user.uid);
-  const profileSnap = await getDoc(profileRef);
-
-  if (!profileSnap.exists()) {
-   throw new Error("Admin-এ users profile পৰীক্ষা কৰক।");
-  }
-
-  const profile = profileSnap.data();
-
-  if (profile.active !== true) {
-   throw new Error("এই account সক্ৰিয় নহয়।");
-  }
-
-  if (!["admin","teacher"].includes(profile.role)) {
-   throw new Error("Account role সঠিক নহয়।");
-  }
-
-  $("loginCard").classList.add("hidden");
-  $("dashboard").classList.remove("hidden");
-
-  $("welcome").textContent =
-   "Welcome, " + (profile.name || "GJV User");
-
-  $("role").textContent =
-   profile.role === "admin"
-   ? "Admin / প্ৰশাসক"
-   : "Teacher / শিক্ষক";
-
-  $("uid").textContent = "Account verified";
-
-  message("");
-
- } catch(error) {
-  message(
-   "Profile যাচাই হোৱা নাই।\n" +
-   error.message +
-   "\nFirestore Security Rules-ৰ অনুমতি পৰীক্ষা কৰিব লাগিব।"
-  );
- }
-});
-</script>
-</body>
-</html>
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyC59avCn7uHDCXjpEK9p37XmSojixT27Ic",authDomain:"gjv-attendance-manager.firebaseapp.com",projectId:"gjv-attendance-manager",storageBucket:"gjv-attendance-manager.firebasestorage.app",messagingSenderId:"994581115572",appId:"1:994581115572:web:a0db5e510dbf06634fdde1",measurementId:"G-L5WBVVLGFP"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id),say=t=>$("message").textContent=t;
+$("attendanceDate").value=new Date().toLocaleDateString("en-CA");
+async function showAdmin(profile){$("loginCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("adminArea").classList.remove("hidden");$("teacherArea").classList.add("hidden");$("welcome").textContent="Welcome, "+(profile.name||"Admin");$("role").textContent="Role: Admin";const list=$("teacherList");list.innerHTML="";
+for(let n=1;n<=20;n++){const id=String(n).padStart(2,"0"),snap=await getDoc(doc(db,"teachers",id)),name=snap.exists()?(snap.data().name||"Teacher "+n):"Teacher "+n,wrap=document.createElement("div");wrap.className="teacher";const grid=document.createElement("div");grid.className="grid";const label=document.createElement("strong");label.textContent="Teacher "+n;const input=document.createElement("input");input.id="name"+id;input.value=name;const select=document.createElement("select");select.id="status"+id;["Present","Absent","Leave"].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;select.append(o)});grid.append(label,input);wrap.append(grid,select);list.append(wrap)}}
+$("loginBtn").onclick=async()=>{try{say("Logging in…");await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);say("Login successful…")}catch(e){say("Login failed: "+e.message)}};
+$("logoutBtn").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,async user=>{if(!user){$("loginCard").classList.remove("hidden");$("dashboard").classList.add("hidden");return}try{const s=await getDoc(doc(db,"users",user.uid));if(!s.exists()||s.data().active!==true)throw Error("Active profile পোৱা নগ'ল");if(s.data().role==="admin")await showAdmin(s.data());else{$("loginCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("adminArea").classList.add("hidden");$("teacherArea").classList.remove("hidden");$("welcome").textContent="Welcome, "+(s.data().name||"Teacher");$("role").textContent="Role: Teacher"}say("Login সফল হৈছে।")}catch(e){say("Profile যাচাই হোৱা নাই: "+e.message)}});
+$("saveBtn").onclick=async()=>{const user=auth.currentUser,date=$("attendanceDate").value;if(!date)return say("তাৰিখ বাছনি কৰক");try{say("সংৰক্ষণ হৈ আছে…");for(let n=1;n<=20;n++){const id=String(n).padStart(2,"0"),name=$("name"+id).value.trim()||"Teacher "+n,status=$("status"+id).value;await setDoc(doc(db,"teachers",id),{name,number:n,updatedAt:serverTimestamp()},{merge:true});await setDoc(doc(db,"attendance",date+"_"+id),{date,teacherNumber:n,teacherName:name,status,markedBy:user.uid,updatedAt:serverTimestamp()},{merge:true})}say("সফল! ২০ জনৰ Attendance সংৰক্ষণ হৈছে।")}catch(e){say("সংৰক্ষণ হোৱা নাই: "+e.message+" — Firestore Rules আপডেট কৰিব লাগিব।")}};
+</script></main></body></html>
