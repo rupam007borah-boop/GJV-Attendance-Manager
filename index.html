@@ -19,7 +19,7 @@ $("loginBtn").onclick=async()=>{
     say("Logging in...");
     const cred=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);
     say("Login successful. Checking profile...");
-    const s=await getDoc(doc(db,"users",cred.user.uid));
+    console.log("LOGIN UID:", cred.user.uid);const s=await getDoc(doc(db,"users",cred.user.uid));
     if(!s.exists()) throw new Error("UID mismatch: "+cred.user.uid);;
     if(s.data().active!==true) throw new Error("Admin inactive");
     if(s.data().role!=="admin") throw new Error("Role is not admin");
