@@ -14,7 +14,21 @@ const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$
 $("attendanceDate").value=new Date().toLocaleDateString("en-CA");
 async function showAdmin(profile){$("loginCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("adminArea").classList.remove("hidden");$("teacherArea").classList.add("hidden");$("welcome").textContent="Welcome, "+(profile.name||"Admin");$("role").textContent="Role: Admin";const list=$("teacherList");list.innerHTML="";
 for(let n=1;n<=20;n++){const id=String(n).padStart(2,"0"),snap=await getDoc(doc(db,"teachers",id)),name=snap.exists()?(snap.data().name||"Teacher "+n):"Teacher "+n,wrap=document.createElement("div");wrap.className="teacher";const grid=document.createElement("div");grid.className="grid";const label=document.createElement("strong");label.textContent="Teacher "+n;const input=document.createElement("input");input.id="name"+id;input.value=name;const select=document.createElement("select");select.id="status"+id;["Present","Absent","Leave"].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;select.append(o)});grid.append(label,input);wrap.append(grid,select);list.append(wrap)}}
-$("loginBtn").onclick=async()=>{try{say("Logging in…");await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);say("Login successful…")}catch(e){say("Login failed: "+e.message)}};
+$("loginBtn").onclick=async()=>{
+  try{
+    say("Logging in...");
+    const cred=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);
+    say("Login successful. Checking profile...");
+    const s=await getDoc(doc(db,"users",cred.user.uid));
+    if(!s.exists()) throw new Error("Admin profile not found");
+    if(s.data().active!==true) throw new Error("Admin inactive");
+    if(s.data().role!=="admin") throw new Error("Role is not admin");
+    await showAdmin(s.data());
+    say("Admin Dashboard loaded.");
+  }catch(e){
+    say("ERROR: "+(e.code||"")+" "+e.message);
+  }
+};
 $("logoutBtn").onclick=()=>signOut(auth);
 onAuthStateChanged(auth,async user=>{if(!user){$("loginCard").classList.remove("hidden");$("dashboard").classList.add("hidden");return}try{const s=await getDoc(doc(db,"users",user.uid));if(!s.exists()||s.data().active!==true)throw Error("Active profile পোৱা নগ'ল");if(s.data().role==="admin")await showAdmin(s.data());else{$("loginCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("adminArea").classList.add("hidden");$("teacherArea").classList.remove("hidden");$("welcome").textContent="Welcome, "+(s.data().name||"Teacher");$("role").textContent="Role: Teacher"}say("Login সফল হৈছে।")}catch(e){say("Profile যাচাই হোৱা নাই: "+e.message)}});
 $("saveBtn").onclick=async()=>{const user=auth.currentUser,date=$("attendanceDate").value;if(!date)return say("তাৰিখ বাছনি কৰক");try{say("সংৰক্ষণ হৈ আছে…");for(let n=1;n<=20;n++){const id=String(n).padStart(2,"0"),name=$("name"+id).value.trim()||"Teacher "+n,status=$("status"+id).value;await setDoc(doc(db,"teachers",id),{name,number:n,updatedAt:serverTimestamp()},{merge:true});await setDoc(doc(db,"attendance",date+"_"+id),{date,teacherNumber:n,teacherName:name,status,markedBy:user.uid,updatedAt:serverTimestamp()},{merge:true})}say("সফল! ২০ জনৰ Attendance সংৰক্ষণ হৈছে।")}catch(e){say("সংৰক্ষণ হোৱা নাই: "+e.message+" — Firestore Rules আপডেট কৰিব লাগিব।")}};
